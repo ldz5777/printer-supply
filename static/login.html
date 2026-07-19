@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>登录 — 打印机耗材管理系统</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Microsoft YaHei","PingFang SC",-apple-system,sans-serif;background:linear-gradient(135deg,#1a237e,#283593,#2E7D32);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.login-box{background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.3);max-width:420px;width:100%;overflow:hidden}
+.login-head{background:linear-gradient(135deg,#2E7D32,#43A047);color:#fff;padding:28px 20px;text-align:center}
+.login-head .logo{font-size:2.8rem;margin-bottom:6px}
+.login-head h1{font-size:1.15rem;font-weight:600}.login-head p{font-size:.78rem;opacity:.85;margin-top:2px}
+.login-body{padding:20px}
+.login-tabs{display:flex;margin-bottom:20px;border-radius:10px;overflow:hidden;border:1px solid #e0e0e0}
+.login-tab{flex:1;padding:12px;text-align:center;border:none;background:#f5f5f5;font-size:.85rem;font-weight:500;cursor:pointer;font-family:inherit;transition:all .2s}
+.login-tab.active{background:#2E7D32;color:#fff}
+.login-form{display:none}.login-form.active{display:block;animation:fadeIn .3s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.form-group{margin-bottom:14px}.form-group label{display:block;font-size:.82rem;color:#666;margin-bottom:5px;font-weight:500}
+input,select{width:100%;padding:11px 14px;border:1px solid #ddd;border-radius:8px;font-size:.9rem;font-family:inherit;background:#fff}
+input:focus,select:focus{outline:none;border-color:#2E7D32}
+.login-btn{width:100%;padding:14px;background:linear-gradient(135deg,#43A047,#2E7D32);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;margin-top:4px}
+.login-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(46,125,50,.3)}
+.login-btn:active{transform:scale(.98)}
+.err{color:#f44336;font-size:.8rem;margin-top:6px;display:none}
+.footer-note{text-align:center;padding:14px;font-size:.73rem;color:#999;border-top:1px solid #f0f0f0}
+@media(max-width:400px){.login-box{border-radius:16px}.login-head{padding:22px 14px}.login-body{padding:14px}}
+</style>
+</head>
+<body>
+<div class="login-box">
+<div class="login-head">
+<div class="logo">🖨️</div>
+<h1>打印机耗材管理系统</h1>
+<p>Printer Supply Management</p>
+</div>
+<div class="login-body">
+<div class="login-tabs">
+<button class="login-tab active" onclick="switchTab('user')">👤 员工登录</button>
+<button class="login-tab" onclick="switchTab('admin')">🔑 管理员</button>
+</div>
+<div id="userForm" class="login-form active">
+<div class="form-group"><label>🏢 部门</label><select id="uDept"><option value="">-- 选择 --</option></select></div>
+<div class="form-group"><label>👤 姓名</label><input type="text" id="uName" placeholder="请输入姓名"></div>
+<button class="login-btn" onclick="userLogin()">进入系统</button>
+<div id="uErr" class="err"></div>
+</div>
+<div id="adminForm" class="login-form">
+<div class="form-group"><label>👤 账号</label><input type="text" id="aUser" placeholder="账号"></div>
+<div class="form-group"><label>🔒 密码</label><input type="password" id="aPass" placeholder="密码"></div>
+<button class="login-btn" onclick="adminLogin()">登录后台</button>
+<div id="aErr" class="err"></div>
+</div>
+</div>
+<div class="footer-note">首次使用请用默认账号 admin / admin123 登录后修改密码</div>
+</div>
+<script>
+const API='/api';
+async function api(p,o={}){const h={'Content-Type':'application/json',...o.headers};const r=await fetch(API+p,{...o,headers:h});const d=await r.json();if(!r.ok)throw new Error(d.detail||'失败');return d}
+function switchTab(t){document.querySelectorAll('.login-tab').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.login-form').forEach(f=>f.classList.remove('active'));document.querySelector('.login-tab:nth-child('+(t==='user'?1:2)+')').classList.add('active');document.getElementById(t==='user'?'userForm':'adminForm').classList.add('active')}
+async function userLogin(){const d=document.getElementById('uDept').value,n=document.getElementById('uName').value.trim(),e=document.getElementById('uErr');if(!d||!n){e.textContent='请选择部门并填写姓名';e.style.display='block';return}e.style.display='none';try{const r=await api('/auth/user/login',{method:'POST',body:JSON.stringify({department:d,applicant:n})});localStorage.setItem('ptok',r.access_token);location.href='/static/user.html'}catch(x){e.textContent=x.message;e.style.display='block'}}
+async function adminLogin(){const u=document.getElementById('aUser').value.trim(),p=document.getElementById('aPass').value,e=document.getElementById('aErr');if(!u||!p){e.textContent='请填写账号密码';e.style.display='block';return}e.style.display='none';try{const r=await api('/auth/admin/login',{method:'POST',body:JSON.stringify({username:u,password:p})});localStorage.setItem('ptok',r.access_token);location.href='/static/admin.html'}catch(x){e.textContent=x.message;e.style.display='block'}}
+async function loadDepts(){try{const r=await fetch(API+'/departments');if(r.ok){const d=await r.json();document.getElementById('uDept').innerHTML='<option value="">-- 选择 --</option>'+d.map(x=>'<option value="'+x.name+'">'+x.name+'</option>').join('')}}catch(e){}}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'){if(document.getElementById('userForm').classList.contains('active'))userLogin();else adminLogin()}});
+loadDepts();
+</script>
+</body>
+</html>
