@@ -1,0 +1,2214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>打印机耗材分配与费用分摊系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 26px;
+            font-weight: 500;
+        }
+
+        /* 标签页导航 */
+        .tabs {
+            display: flex;
+            background: #f5f5f5;
+            border-bottom: 2px solid #e0e0e0;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 15px;
+            color: #666;
+            transition: all 0.3s;
+            white-space: nowrap;
+            min-width: 100px;
+        }
+
+        .tab-btn:hover {
+            background: #e8e8e8;
+            color: #333;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: #4CAF50;
+            border-bottom: 3px solid #4CAF50;
+            font-weight: bold;
+        }
+
+        /* 内容区域 */
+        .tab-content {
+            display: none;
+            padding: 25px;
+            animation: fadeIn 0.3s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 表单样式 */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        /* 按钮样式 */
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-secondary {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #FF9800;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-success {
+            background: #009688;
+            color: white;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+
+        /* 表格样式 */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 14px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #555;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        /* 卡片样式 */
+        .card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #4CAF50;
+        }
+
+        /* 权重输入 */
+        .weight-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .weight-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .weight-item label {
+            min-width: 80px;
+            margin-bottom: 0;
+        }
+
+        .weight-item input {
+            flex: 1;
+        }
+
+        /* 结果显示 */
+        .result-box {
+            background: #f0f8ff;
+            border-left: 4px solid #2196F3;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 0 8px 8px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* 报表样式 */
+        .report-section {
+            margin-bottom: 30px;
+        }
+
+        .report-title {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 15px;
+            padding: 10px 0;
+            border-bottom: 2px solid #9C27B0;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .summary-card h3 {
+            font-size: 14px;
+            font-weight: normal;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .summary-card .value {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        /* 部门管理 */
+        .dept-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .dept-tag {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dept-tag button {
+            background: none;
+            border: none;
+            color: #f44336;
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .dept-tag button:hover {
+            color: #d32f2f;
+        }
+
+        /* 提示信息 */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .tabs { flex-wrap: wrap; }
+            .tab-btn { flex: 1 1 auto; padding: 10px 8px; font-size: 13px; }
+            .form-row { grid-template-columns: 1fr; }
+            .weight-grid { grid-template-columns: 1fr; }
+            .card { padding: 14px; margin-bottom: 10px; }
+            table { font-size: 0.78rem; }
+            th, td { padding: 8px 6px; }
+            .btn { padding: 8px 14px; font-size: 0.8rem; }
+            .tab-content { padding: 10px; }
+            .search-bar { flex-direction: column; }
+            .search-bar input, .search-bar select { max-width: 100%; }
+            input, select { font-size: 16px; }
+        }
+        @media (max-width: 480px) {
+            .tab-btn { padding: 8px 6px; font-size: 12px; }
+            .card { padding: 12px; }
+            th, td { padding: 6px 4px; font-size: 0.72rem; }
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* 标签样式 */
+        .tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .tag-墨盒 { background: #e3f2fd; color: #1976d2; }
+        .tag-硒鼓 { background: #f3e5f5; color: #7b1fa2; }
+        .tag-打印纸 { background: #e8f5e9; color: #388e3c; }
+        .tag-色带 { background: #fff3e0; color: #f57c00; }
+        .tag-其他 { background: #eceff1; color: #546e7a; }
+
+        /* 文件上传区域 */
+        .file-upload {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            background: #fafafa;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-upload:hover {
+            border-color: #4CAF50;
+            background: #f0f8f0;
+        }
+
+        .file-upload input {
+            display: none;
+        }
+
+        /* 数据状态提示 */
+        .data-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 1000;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .status-success {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .status-error {
+            background: #f44336;
+            color: white;
+        }
+
+        /* 保存文件对话框 */
+        .save-dialog {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .save-dialog h3 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .save-path {
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 13px;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>打印机耗材分配与费用分摊系统</h1>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('supply')">📦 耗材入库</button>
+            <button class="tab-btn" onclick="showTab('manage')">🔧 耗材管理</button>
+            <button class="tab-btn" onclick="showTab('allocate')">📋 耗材分配</button>
+            <button class="tab-btn" onclick="showTab('auto')">⚡ 自动分摊</button>
+            <button class="tab-btn" onclick="showTab('report')">📊 报表统计</button>
+            <button class="tab-btn" onclick="showTab('requisition')">📝 领用审批</button>
+            <button class="tab-btn" onclick="showTab('dept')">🏢 部门管理</button>
+            <button class="tab-btn" onclick="showTab('data')">💾 数据管理</button>
+        </div>
+
+        <!-- 耗材入库 -->
+        <div id="supply" class="tab-content active">
+            <div class="card">
+                <div class="card-title">耗材入库登记</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>耗材名称</label>
+                        <input type="text" id="supplyName" placeholder="例如：HP 88A 黑色墨盒">
+                    </div>
+                    <div class="form-group">
+                        <label>类型</label>
+                        <select id="supplyType">
+                            <option value="墨盒">墨盒</option>
+                            <option value="硒鼓">硒鼓</option>
+                            <option value="打印纸">打印纸</option>
+                            <option value="色带">色带</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>数量</label>
+                        <input type="number" id="supplyQty" placeholder="输入数量" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>含税单价（元）</label>
+                        <input type="number" id="supplyPrice" placeholder="输入含税单价" min="0" step="0.01" oninput="calcPrice()">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>税率</label>
+                        <select id="taxRate" onchange="calcPrice()">
+                            <option value="0">0% (免税)</option>
+                            <option value="3">3% (小规模)</option>
+                            <option value="6">6% (服务类)</option>
+                            <option value="9">9% (交通运输)</option>
+                            <option value="13" selected>13% (一般货物)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>不含税单价（元）</label>
+                        <input type="text" id="priceWithoutTax" placeholder="输入含税单价后自动计算" readonly style="background: #e8f5e9; font-weight: bold; color: #2e7d32; font-size: 16px;">
+                    </div>
+                </div>
+                <div class="card" style="background: #fff3e0; border-left: 4px solid #FF9800;">
+                    <div style="font-weight: bold; margin-bottom: 15px; color: #e65100;">📋 预分配设置（可选）</div>
+                    <div id="preAllocContainer">
+                        <!-- 动态生成部门选择 -->
+                    </div>
+                    <div style="margin-top: 15px; padding: 10px; background: white; border-radius: 6px;">
+                        <strong>预分配汇总：</strong>
+                        <span id="preAllocSummary">未设置预分配</span>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="addSupply()">✓ 确认入库</button>
+                    <button class="btn btn-secondary" onclick="clearSupplyForm()">清空</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">入库记录</div>
+                <div class="btn-group" style="margin-bottom: 15px;">
+                    <button class="btn btn-success" onclick="exportSupplyToExcel()">📥 导出Excel</button>
+                    <button class="btn btn-secondary" onclick="showSupplyByDate()">📅 按时间筛选</button>
+                </div>
+                <div id="dateFilterArea" class="form-row hidden" style="margin-bottom: 15px;">
+                    <div class="form-group">
+                        <label>开始日期</label>
+                        <input type="date" id="startDate">
+                    </div>
+                    <div class="form-group">
+                        <label>结束日期</label>
+                        <input type="date" id="endDate">
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: flex-end;">
+                        <button class="btn btn-primary" onclick="filterByDate()">筛选</button>
+                        <button class="btn btn-secondary" onclick="clearDateFilter()" style="margin-left: 10px;">清除</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>编号</th>
+                                <th>名称</th>
+                                <th>类型</th>
+                                <th class="text-center">数量</th>
+                                <th class="text-right">含税单价</th>
+                                <th class="text-right">税率</th>
+                                <th class="text-right">不含税单价</th>
+                                <th class="text-right">含税总价</th>
+                                <th>入库日期</th>
+                                <th class="text-center">剩余</th>
+                                <th>预分配</th>
+                            </tr>
+                        </thead>
+                        <tbody id="supplyTable">
+                            <!-- 动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 耗材管理 -->
+        <div id="manage" class="tab-content">
+            <div class="card">
+                <div class="card-title">📦 耗材库存管理</div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="renderSupplyManage()">🔄 刷新列表</button>
+                    <button class="btn btn-secondary" onclick="showLowStock()">⚠️ 查看库存预警</button>
+                    <button class="btn btn-success" onclick="exportSupplyList()">📥 导出耗材清单</button>
+                </div>
+
+                <div class="form-row" style="margin-top: 15px;">
+                    <div class="form-group">
+                        <label>搜索耗材</label>
+                        <input type="text" id="searchSupply" placeholder="输入耗材名称搜索" oninput="filterSupply()">
+                    </div>
+                    <div class="form-group">
+                        <label>按类型筛选</label>
+                        <select id="filterType" onchange="filterSupply()">
+                            <option value="">全部类型</option>
+                            <option value="墨盒">墨盒</option>
+                            <option value="硒鼓">硒鼓</option>
+                            <option value="打印纸">打印纸</option>
+                            <option value="色带">色带</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">耗材列表 <span id="supplyCountDisplay" style="color: #666; font-size: 14px;">(共 0 条)</span></div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>编号</th>
+                                <th>名称</th>
+                                <th>类型</th>
+                                <th class="text-center">入库数量</th>
+                                <th class="text-center">已分配</th>
+                                <th class="text-center" style="color: #f44336;">剩余</th>
+                                <th class="text-right">含税/不含税单价</th>
+                                <th class="text-right">税率</th>
+                                <th class="text-right">总成本</th>
+                                <th>入库日期</th>
+                                <th class="text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="manageSupplyTable">
+                            <!-- 动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 耗材编辑对话框 -->
+            <div id="editDialog" class="card hidden">
+                <div class="card-title">✏️ 编辑耗材信息</div>
+                <input type="hidden" id="editSupplyId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>耗材名称</label>
+                        <input type="text" id="editSupplyName">
+                    </div>
+                    <div class="form-group">
+                        <label>类型</label>
+                        <select id="editSupplyType">
+                            <option value="墨盒">墨盒</option>
+                            <option value="硒鼓">硒鼓</option>
+                            <option value="打印纸">打印纸</option>
+                            <option value="色带">色带</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>数量</label>
+                        <input type="number" id="editSupplyQty" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>含税单价（元）</label>
+                        <input type="number" id="editSupplyPrice" min="0" step="0.01">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>税率</label>
+                        <select id="editTaxRate">
+                            <option value="0">0% (免税)</option>
+                            <option value="3">3% (小规模)</option>
+                            <option value="6">6% (服务类)</option>
+                            <option value="9">9% (交通运输)</option>
+                            <option value="13">13% (一般货物)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>不含税单价（元）</label>
+                        <input type="text" id="editPriceWithoutTax" placeholder="自动计算" readonly style="background: #e8f5e9; font-weight: bold; color: #2e7d32; font-size: 16px;">
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="saveSupplyEdit()">💾 保存修改</button>
+                    <button class="btn btn-secondary" onclick="closeEditDialog()">取消</button>
+                </div>
+            </div>
+
+            <!-- 库存预警区域 -->
+            <div id="lowStockArea" class="card hidden">
+                <div class="card-title" style="border-bottom-color: #f44336;">⚠️ 库存预警（剩余 ≤ 5）</div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr style="background: #ffebee;">
+                                <th>编号</th>
+                                <th>名称</th>
+                                <th>类型</th>
+                                <th class="text-center">入库数量</th>
+                                <th class="text-center" style="color: #f44336;">剩余库存</th>
+                                <th>入库日期</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lowStockTable">
+                            <!-- 动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 耗材分配明细 -->
+            <div id="supplyDetailArea" class="card hidden">
+                <div class="card-title">📋 耗材分配明细</div>
+                <div id="supplyDetailTitle" style="margin-bottom: 15px; color: #666;"></div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>日期</th>
+                                <th>部门</th>
+                                <th class="text-center">数量</th>
+                                <th class="text-right">分摊费用</th>
+                            </tr>
+                        </thead>
+                        <tbody id="supplyDetailTable">
+                            <!-- 动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="closeSupplyDetail()">关闭</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 耗材分配 -->
+        <div id="allocate" class="tab-content">
+            <div class="card">
+                <div class="card-title">手动分配耗材</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>选择耗材</label>
+                        <select id="allocSupply">
+                            <option value="">-- 请选择 --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>选择部门</label>
+                        <select id="allocDept">
+                            <option value="">-- 请选择 --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>分配数量</label>
+                        <input type="number" id="allocQty" placeholder="输入数量" min="1">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="doAllocate()">✓ 执行分配</button>
+            </div>
+
+            <div class="card">
+                <div class="card-title">分配记录</div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>日期</th>
+                                <th>耗材名称</th>
+                                <th>部门</th>
+                                <th class="text-center">数量</th>
+                                <th class="text-right">单价</th>
+                                <th class="text-right">分摊费用</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allocTable">
+                            <!-- 动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 自动分摊 -->
+        <div id="auto" class="tab-content">
+            <div class="card">
+                <div class="card-title">按部门比例自动分摊</div>
+                <div class="form-group">
+                    <label>选择要分摊的耗材</label>
+                    <select id="autoSupply">
+                        <option value="">-- 请选择 --</option>
+                    </select>
+                </div>
+                <div class="card-title" style="margin-top: 20px;">各部门权重（如人数、预估打印量）</div>
+                <div id="weightInputs" class="weight-grid">
+                    <!-- 动态生成 -->
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-warning" onclick="doAutoAllocate()">⚡ 开始自动分摊</button>
+                </div>
+                <div id="autoResult" class="result-box hidden"></div>
+            </div>
+        </div>
+
+        <!-- 报表统计 -->
+        <div id="report" class="tab-content">
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="refreshReport()">🔄 刷新报表</button>
+                <button class="btn btn-success" onclick="saveToFile()">💾 保存到本地文件</button>
+            </div>
+
+            <div id="reportContent">
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <h3>含税总费用</h3>
+                        <div class="value" id="totalCost">¥0</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>不含税总费用</h3>
+                        <div class="value" id="totalCostWithoutTax">¥0</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>入库次数</h3>
+                        <div class="value" id="supplyCount">0</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>分配次数</h3>
+                        <div class="value" id="allocCount">0</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>部门数量</h3>
+                        <div class="value" id="deptCount">0</div>
+                    </div>
+                </div>
+
+                <div class="report-section">
+                    <div class="report-title">按部门汇总</div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>部门</th>
+                                    <th class="text-center">分配次数</th>
+                                    <th class="text-right">分摊费用</th>
+                                    <th class="text-right">占比</th>
+                                </tr>
+                            </thead>
+                            <tbody id="deptSummaryTable">
+                                <!-- 动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="report-section">
+                    <div class="report-title">按耗材汇总</div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>耗材名称</th>
+                                    <th class="text-right">总费用</th>
+                                </tr>
+                            </thead>
+                            <tbody id="supplySummaryTable">
+                                <!-- 动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="report-section">
+                    <div class="report-title">分配明细</div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>日期</th>
+                                    <th>耗材</th>
+                                    <th>部门</th>
+                                    <th class="text-center">数量</th>
+                                    <th class="text-right">金额</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailTable">
+                                <!-- 动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 部门管理 -->
+        <div id="dept" class="tab-content">
+            <div class="card">
+                <div class="card-title">当前部门</div>
+                <div id="deptList" class="dept-list">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">添加新部门</div>
+                <div class="form-row">
+                    <div class="form-group" style="flex: 1;">
+                        <input type="text" id="newDeptName" placeholder="输入部门名称">
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="addDept()">+ 添加部门</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据管理 -->
+        <div id="data" class="tab-content">
+            <div class="card">
+                <div class="card-title">💾 保存数据到本地</div>
+                <p style="color: #666; margin-bottom: 15px;">
+                    将当前所有数据保存到本地 JSON 文件，防止数据丢失。建议定期保存。
+                </p>
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="saveToFile()">📥 保存到文件</button>
+                    <button class="btn btn-primary" onclick="saveToFile('supply_data.json')">另存为 supply_data.json</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📂 从本地文件加载数据</div>
+                <p style="color: #666; margin-bottom: 15px;">
+                    选择之前保存的数据文件，恢复所有记录。
+                </p>
+                <div class="file-upload" onclick="document.getElementById('fileInput').click()">
+                    <input type="file" id="fileInput" accept=".json" onchange="loadFromFile(event)">
+                    <div style="font-size: 48px; margin-bottom: 10px;">📁</div>
+                    <div>点击选择文件或拖拽文件到此处</div>
+                    <div style="color: #999; font-size: 13px; margin-top: 10px;">支持 .json 格式</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🔄 数据备份与恢复</div>
+                <div class="form-group">
+                    <label>当前数据状态</label>
+                    <div id="dataStatusInfo" style="background: #f5f5f5; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 13px; line-height: 1.8;">
+                        加载中...
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="exportToClipboard()">📋 复制数据到剪贴板</button>
+                    <button class="btn btn-danger" onclick="clearAllData()">🗑️ 清空所有数据</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📝 使用说明</div>
+                <div style="color: #666; line-height: 1.8;">
+                    <p><strong>1. 数据保存：</strong>点击「保存到文件」将数据下载到本地，文件名建议包含日期，如 <code>supply_data_2024-01-15.json</code></p>
+                    <p><strong>2. 数据加载：</strong>点击「从本地文件加载」，选择之前保存的 JSON 文件即可恢复数据</p>
+                    <p><strong>3. 自动提示：</strong>当检测到数据变更时，系统会提示您保存</p>
+                    <p><strong>4. 重要提醒：</strong>浏览器缓存可能被清除，<span style="color: #f44336; font-weight: bold;">请务必定期保存到本地文件！</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 领用审批 -->
+        <div id="requisition" class="tab-content">
+            <div class="card" style="border-left:4px solid #FF9800;">
+                <div class="card-title">📤 导入员工申请 <span style="font-size:0.8rem;color:#999;font-weight:400">员工端导出后发给管理员的文件</span></div>
+                <label class="file-upload" style="margin:0;">
+                    <input type="file" accept=".json" onchange="importReqs(this)">
+                    <div>📁 点击导入员工申请文件</div>
+                    <div style="font-size:12px;color:#999;margin-top:4px;">支持批量导入，自动去重</div>
+                </label>
+            </div>
+            <div class="card">
+                <div class="card-title">📝 审核管理 <span id="pendBadge" style="background:#f44336;color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;display:none;">0</span></div>
+                <div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn btn-sm" style="background:#FFF3E0;color:#E65100;font-weight:600;" onclick="filterReqs('pending')">⏳ 待审核(<span id="pc">0</span>)</button>
+                    <button class="btn btn-sm btn-outline" onclick="filterReqs('approved')">✅ 已通过</button>
+                    <button class="btn btn-sm btn-outline" onclick="filterReqs('rejected')">❌ 已驳回</button>
+                    <button class="btn btn-sm btn-outline" onclick="filterReqs('')">📋 全部</button>
+                    <button class="btn btn-sm btn-warning" onclick="batchApprove()" style="margin-left:auto">⚡ 一键通过</button>
+                </div>
+                <div class="table-wrap"><table><thead><tr><th>ID</th><th>部门</th><th>申请人</th><th>耗材</th><th class="tr">数量</th><th>理由</th><th>日期</th><th>状态</th><th>操作</th></tr></thead><tbody id="rtb"><tr><td colspan="9" class="tc muted">暂无</td></tr></tbody></table></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 数据存储
+        let data = {
+            supplies: [],
+            allocations: [],
+            requests: [],
+            departments: ["办公室", "人力资源部", "授信审批部", "计划财务部", "运营管理部", "国际金融部", "公司业务部", "个人业务部", "信息科技部", "风险管理部", "纪委办公室", "信用卡中心", "内控合规部", "金融市场部", "零售一部", "零售三部", "公司一部", "公司二部", "公司三部", "公司七部", "营销九部", "营销十部", "网络金融部", "普惠金融部", "学府路支行", "南通大街支行", "哈西支行", "自贸区支行", "兴江路支行"]
+        };
+
+        // 数据变更标记
+        let dataChanged = false;
+
+        // 初始化
+        function init() {
+            loadData();
+            renderAll();
+            initPreAlloc();
+            updateDataStatus();
+
+            // 页面关闭前提示保存
+            window.addEventListener('beforeunload', function(e) {
+                if (dataChanged) {
+                    e.preventDefault();
+                    e.returnValue = '数据尚未保存，确定要离开吗？';
+                }
+            });
+
+            // 拖拽上传支持
+            const dropZone = document.querySelector('.file-upload');
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#4CAF50';
+                dropZone.style.background = '#f0f8f0';
+            });
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#ccc';
+                dropZone.style.background = '#fafafa';
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#ccc';
+                dropZone.style.background = '#fafafa';
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && files[0].name.endsWith('.json')) {
+                    handleFile(files[0]);
+                } else {
+                    showStatus('请选择 .json 格式的文件', 'error');
+                }
+            });
+        }
+
+        // 从 localStorage 加载数据
+        function loadData() {
+            const saved = localStorage.getItem('printerSupplyData');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    // 合并数据，保留默认部门
+                    data.supplies = parsed.supplies || [];
+                    data.allocations = parsed.allocations || [];
+                    data.departments = parsed.departments || data.departments;
+                } catch (e) {
+                    console.error('加载数据失败', e);
+                }
+            }
+        }
+
+        // 保存数据到 localStorage（临时）
+        function saveData() {
+            localStorage.setItem('printerSupplyData', JSON.stringify(data));
+            dataChanged = true;
+            updateDataStatus();
+        }
+
+        // 保存到本地文件
+        function saveToFile(filename) {
+            const dataStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+
+            // 生成文件名
+            const date = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-');
+            const defaultName = filename || `printer_supply_data_${date}.json`;
+
+            a.href = url;
+            a.download = defaultName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            dataChanged = false;
+            updateDataStatus();
+            showStatus('数据已保存到本地文件！', 'success');
+        }
+
+        // 从文件加载数据
+        function loadFromFile(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const loadedData = JSON.parse(e.target.result);
+
+                    // 验证数据结构
+                    if (!loadedData.supplies || !loadedData.allocations || !loadedData.departments) {
+                        throw new Error('数据格式不正确');
+                    }
+
+                    // 确认是否覆盖
+                    if (data.supplies.length > 0 || data.allocations.length > 0) {
+                        if (!confirm('加载文件将覆盖当前数据，是否继续？')) {
+                            return;
+                        }
+                    }
+
+                    // 加载数据
+                    data = loadedData;
+                    saveData();
+                    renderAll();
+                    initPreAlloc();
+                    updateDataStatus();
+                    showStatus('数据加载成功！', 'success');
+                } catch (err) {
+                    showStatus('文件读取失败：' + err.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // 导出到剪贴板
+        function exportToClipboard() {
+            const dataStr = JSON.stringify(data, null, 2);
+            navigator.clipboard.writeText(dataStr).then(() => {
+                showStatus('数据已复制到剪贴板！', 'success');
+            }).catch(() => {
+                showStatus('复制失败，请手动复制', 'error');
+            });
+        }
+
+        // 更新数据状态显示
+        function updateDataStatus() {
+            const info = document.getElementById('dataStatusInfo');
+            const totalSupplyCost = data.supplies.reduce((sum, s) => sum + s.total_cost, 0);
+            const totalAllocCost = data.allocations.reduce((sum, a) => sum + a.cost, 0);
+
+            const pendingCount = (data.requests||[]).filter(r=>r.status==='pending').length;
+            info.innerHTML = `
+                <div>📦 入库记录：${data.supplies.length} 条</div>
+                <div>📋 分配记录：${data.allocations.length} 条</div>
+                <div>📝 领用申请：${(data.requests||[]).length} 条</div>
+                <div>🏢 部门数量：${data.departments.length} 个</div>
+                <div>💰 入库总额：¥${totalSupplyCost.toFixed(2)}</div>
+                <div>💸 已分摊总额：¥${totalAllocCost.toFixed(2)}</div>
+                <div style="margin-top:6px;color:${pendingCount>0?'#f44336':'#4CAF50'};font-weight:600;">${pendingCount>0?'⏳ 待审核：'+pendingCount+' 条':'✓ 无待审核'}</div>
+                <div style="margin-top: 10px; color: ${dataChanged ? '#f44336' : '#4CAF50'};">
+                    ${dataChanged ? '⚠️ 数据已变更，建议保存到本地文件' : '✓ 数据已同步'}
+                </div>
+            `;
+        }
+
+        function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''; }
+
+        // 显示状态提示
+        function showStatus(message, type) {
+            const div = document.createElement('div');
+            div.className = `data-status status-${type}`;
+            div.textContent = message;
+            document.body.appendChild(div);
+
+            setTimeout(() => {
+                div.style.opacity = '0';
+                div.style.transform = 'translateX(100%)';
+                setTimeout(() => div.remove(), 300);
+            }, 3000);
+        }
+
+        // 切换标签页
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('active');
+            });
+
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'report') {
+                refreshReport();
+            } else if (tabName === 'data') {
+                updateDataStatus();
+            } else if (tabName === 'requisition') {
+                renderReqTable();
+            } else if (tabName === 'manage') {
+                renderSupplyManage();
+            }
+        }
+
+        // ========== 耗材入库 ==========
+        function calcPrice() {
+            const priceInput = document.getElementById('supplyPrice').value;
+            const price = parseFloat(priceInput) || 0;
+            const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
+
+            if (!priceInput || price === 0) {
+                document.getElementById('priceWithoutTax').value = '';
+                return;
+            }
+
+            const priceWithoutTax = price / (1 + taxRate / 100);
+            document.getElementById('priceWithoutTax').value = priceWithoutTax.toFixed(2);
+            updatePreAllocSummary();
+        }
+
+        function initPreAlloc() {
+            const container = document.getElementById('preAllocContainer');
+            container.innerHTML = data.departments.map(dept => `
+                <div class="form-row" style="margin-bottom: 10px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label style="margin-bottom: 3px; font-size: 13px;">${dept}</label>
+                        <input type="number" id="preAlloc-${dept}" placeholder="分配数量" min="0" style="padding: 8px;" oninput="updatePreAllocSummary()">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label style="margin-bottom: 3px; font-size: 13px;">金额（元）</label>
+                        <input type="text" id="preAllocAmount-${dept}" readonly style="padding: 8px; background: #f5f5f5;">
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updatePreAllocSummary() {
+            const qty = parseInt(document.getElementById('supplyQty').value) || 0;
+            const price = parseFloat(document.getElementById('supplyPrice').value) || 0;
+            const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
+            const priceWithoutTax = price / (1 + taxRate / 100);
+
+            let totalAllocQty = 0;
+            let totalAllocAmount = 0;
+            let details = [];
+
+            data.departments.forEach(dept => {
+                const allocQty = parseInt(document.getElementById(`preAlloc-${dept}`).value) || 0;
+                const allocAmount = allocQty * price;
+                document.getElementById(`preAllocAmount-${dept}`).value = allocAmount > 0 ? allocAmount.toFixed(2) : '';
+
+                if (allocQty > 0) {
+                    totalAllocQty += allocQty;
+                    totalAllocAmount += allocAmount;
+                    details.push(`${dept}:${allocQty}个`);
+                }
+            });
+
+            const summary = document.getElementById('preAllocSummary');
+            if (totalAllocQty === 0) {
+                summary.innerHTML = '未设置预分配';
+                summary.style.color = '#666';
+            } else if (totalAllocQty > qty) {
+                summary.innerHTML = `<span style="color: #f44336;">⚠️ 预分配数量(${totalAllocQty})超过入库数量(${qty})！</span>`;
+            } else {
+                summary.innerHTML = `<span style="color: #4CAF50;">✓ 预分配 ${totalAllocQty}/${qty} 个，合计 ¥${totalAllocAmount.toFixed(2)}<br>${details.join('，')}</span>`;
+            }
+        }
+
+        function addSupply() {
+            const name = document.getElementById('supplyName').value.trim();
+            const type = document.getElementById('supplyType').value;
+            const qty = parseInt(document.getElementById('supplyQty').value);
+            const price = parseFloat(document.getElementById('supplyPrice').value);
+            const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
+
+            if (!name || !qty || qty <= 0 || price < 0) {
+                alert('请填写完整且正确的信息！');
+                return;
+            }
+
+            const priceWithoutTax = price / (1 + taxRate / 100);
+            const totalCost = qty * price;
+            const totalCostWithoutTax = qty * priceWithoutTax;
+
+            // 收集预分配信息
+            const preAllocations = [];
+            let totalPreAllocQty = 0;
+            data.departments.forEach(dept => {
+                const allocQty = parseInt(document.getElementById(`preAlloc-${dept}`).value) || 0;
+                if (allocQty > 0) {
+                    preAllocations.push({
+                        department: dept,
+                        quantity: allocQty,
+                        amount: allocQty * price
+                    });
+                    totalPreAllocQty += allocQty;
+                }
+            });
+
+            if (totalPreAllocQty > qty) {
+                alert('预分配数量不能超过入库数量！');
+                return;
+            }
+
+            const supply = {
+                id: data.supplies.length + 1,
+                name: name,
+                type: type,
+                quantity: qty,
+                unit_price: price,
+                unit_price_without_tax: priceWithoutTax,
+                tax_rate: taxRate,
+                total_cost: totalCost,
+                total_cost_without_tax: totalCostWithoutTax,
+                date: new Date().toLocaleDateString('zh-CN'),
+                remaining: qty - totalPreAllocQty,
+                pre_allocations: preAllocations.length > 0 ? preAllocations : null
+            };
+
+            data.supplies.push(supply);
+
+            // 如果有预分配，创建分配记录
+            if (preAllocations.length > 0) {
+                preAllocations.forEach(pa => {
+                    const allocation = {
+                        id: data.allocations.length + 1,
+                        supply_id: supply.id,
+                        supply_name: name,
+                        department: pa.department,
+                        quantity: pa.quantity,
+                        unit_price: price,
+                        cost: pa.amount,
+                        date: supply.date,
+                        is_pre_alloc: true
+                    };
+                    data.allocations.push(allocation);
+                });
+            }
+
+            saveData();
+            renderAll();
+            clearSupplyForm();
+            showStatus(`入库成功！含税总价：¥${totalCost.toFixed(2)}，不含税：¥${totalCostWithoutTax.toFixed(2)}`, 'success');
+        }
+
+        function clearSupplyForm() {
+            document.getElementById('supplyName').value = '';
+            document.getElementById('supplyQty').value = '';
+            document.getElementById('supplyPrice').value = '';
+            document.getElementById('taxRate').value = '13';
+            document.getElementById('priceWithoutTax').value = '';
+            data.departments.forEach(dept => {
+                const el = document.getElementById(`preAlloc-${dept}`);
+                if (el) el.value = '';
+            });
+            updatePreAllocSummary();
+        }
+
+        function showSupplyByDate() {
+            const area = document.getElementById('dateFilterArea');
+            area.classList.toggle('hidden');
+        }
+
+        function filterByDate() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            renderSupplyTable(startDate, endDate);
+        }
+
+        function clearDateFilter() {
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            renderSupplyTable();
+        }
+
+        function renderSupplyTable(startDate = '', endDate = '') {
+            const table = document.getElementById('supplyTable');
+            let supplies = data.supplies;
+
+            // 按日期筛选
+            if (startDate || endDate) {
+                supplies = supplies.filter(s => {
+                    const supplyDate = new Date(s.date);
+                    const start = startDate ? new Date(startDate) : null;
+                    const end = endDate ? new Date(endDate) : null;
+
+                    if (start && supplyDate < start) return false;
+                    if (end && supplyDate > end) return false;
+                    return true;
+                });
+            }
+
+            if (supplies.length === 0) {
+                table.innerHTML = '<tr><td colspan="11" class="text-center">暂无入库记录</td></tr>';
+                return;
+            }
+
+            table.innerHTML = supplies.map(s => {
+                const preAllocText = s.pre_allocations && s.pre_allocations.length > 0
+                    ? s.pre_allocations.map(pa => `${pa.department}:${pa.quantity}`).join(', ')
+                    : '-';
+                return `<tr>
+                    <td>${s.id}</td>
+                    <td><strong>${s.name}</strong></td>
+                    <td>${s.type}</td>
+                    <td class="text-center">${s.quantity}</td>
+                    <td class="text-right">¥${s.unit_price.toFixed(2)}</td>
+                    <td class="text-right">${s.tax_rate || 13}%</td>
+                    <td class="text-right" style="color: #2e7d32;">¥${(s.unit_price_without_tax || s.unit_price).toFixed(2)}</td>
+                    <td class="text-right" style="font-weight: bold;">¥${s.total_cost.toFixed(2)}</td>
+                    <td>${s.date}</td>
+                    <td class="text-center">${s.remaining}</td>
+                    <td style="font-size: 12px; max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="${preAllocText}">${preAllocText}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function exportSupplyToExcel() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            let supplies = data.supplies;
+
+            // 按日期筛选
+            if (startDate || endDate) {
+                supplies = supplies.filter(s => {
+                    const supplyDate = new Date(s.date);
+                    const start = startDate ? new Date(startDate) : null;
+                    const end = endDate ? new Date(endDate) : null;
+
+                    if (start && supplyDate < start) return false;
+                    if (end && supplyDate > end) return false;
+                    return true;
+                });
+            }
+
+            if (supplies.length === 0) {
+                alert('没有数据可导出');
+                return;
+            }
+
+            // 构建Excel内容（HTML表格格式）
+            let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="UTF-8">
+<style>
+table { border-collapse: collapse; }
+th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+th { background: #f0f0f0; font-weight: bold; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+</style>
+</head>
+<body>
+<table>
+<thead>
+<tr>
+<th>编号</th>
+<th>耗材名称</th>
+<th>类型</th>
+<th class="text-center">数量</th>
+<th class="text-right">含税单价</th>
+<th class="text-right">税率</th>
+<th class="text-right">不含税单价</th>
+<th class="text-right">含税总价</th>
+<th class="text-right">不含税总价</th>
+<th>入库日期</th>
+<th class="text-center">剩余</th>
+<th>预分配明细</th>
+</tr>
+</thead>
+<tbody>`;
+
+            supplies.forEach(s => {
+                const preAllocText = s.pre_allocations && s.pre_allocations.length > 0
+                    ? s.pre_allocations.map(pa => `${pa.department}:${pa.quantity}个(¥${pa.amount.toFixed(2)})`).join('; ')
+                    : '-';
+                html += `<tr>
+<td>${s.id}</td>
+<td>${s.name}</td>
+<td>${s.type}</td>
+<td class="text-center">${s.quantity}</td>
+<td class="text-right">¥${s.unit_price.toFixed(2)}</td>
+<td class="text-right">${s.tax_rate || 13}%</td>
+<td class="text-right">¥${(s.unit_price_without_tax || s.unit_price).toFixed(2)}</td>
+<td class="text-right">¥${s.total_cost.toFixed(2)}</td>
+<td class="text-right">¥${(s.total_cost_without_tax || s.total_cost).toFixed(2)}</td>
+<td>${s.date}</td>
+<td class="text-center">${s.remaining}</td>
+<td>${preAllocText}</td>
+</tr>`;
+            });
+
+            // 添加汇总行
+            const totalQty = supplies.reduce((sum, s) => sum + s.quantity, 0);
+            const totalCost = supplies.reduce((sum, s) => sum + s.total_cost, 0);
+            const totalCostWithoutTax = supplies.reduce((sum, s) => sum + (s.total_cost_without_tax || s.total_cost), 0);
+
+            html += `</tbody>
+<tfoot>
+<tr style="background: #e8f5e9; font-weight: bold;">
+<td colspan="3">合计</td>
+<td class="text-center">${totalQty}</td>
+<td colspan="3"></td>
+<td class="text-right">¥${totalCost.toFixed(2)}</td>
+<td class="text-right">¥${totalCostWithoutTax.toFixed(2)}</td>
+<td colspan="3"></td>
+</tr>
+</tfoot>
+</table>
+</body>
+</html>`;
+
+            const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const dateStr = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-');
+            a.download = `耗材入库记录_${dateStr}.xls`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showStatus('Excel文件已导出！', 'success');
+        }
+
+        // ========== 耗材分配 ==========
+        function doAllocate() {
+            const supplyId = document.getElementById('allocSupply').value;
+            const dept = document.getElementById('allocDept').value;
+            const qty = parseInt(document.getElementById('allocQty').value);
+
+            if (!supplyId || !dept || !qty) {
+                alert('请完整填写分配信息！');
+                return;
+            }
+
+            const supply = data.supplies.find(s => s.id == supplyId);
+            if (!supply) {
+                alert('耗材不存在！');
+                return;
+            }
+
+            if (qty > supply.remaining) {
+                alert(`库存不足！剩余：${supply.remaining}`);
+                return;
+            }
+
+            const allocation = {
+                id: data.allocations.length + 1,
+                supply_id: supplyId,
+                supply_name: supply.name,
+                department: dept,
+                quantity: qty,
+                unit_price: supply.unit_price,
+                cost: qty * supply.unit_price,
+                date: new Date().toLocaleDateString('zh-CN')
+            };
+
+            supply.remaining -= qty;
+            data.allocations.push(allocation);
+            saveData();
+            renderAll();
+            document.getElementById('allocQty').value = '';
+            showStatus(`分配成功！费用：¥${allocation.cost.toFixed(2)}`, 'success');
+        }
+
+        // ========== 自动分摊 ==========
+        function doAutoAllocate() {
+            const supplyId = document.getElementById('autoSupply').value;
+            if (!supplyId) {
+                alert('请选择耗材！');
+                return;
+            }
+
+            const supply = data.supplies.find(s => s.id == supplyId);
+            if (!supply) {
+                alert('耗材不存在！');
+                return;
+            }
+
+            let totalWeight = 0;
+            const weights = {};
+
+            data.departments.forEach(dept => {
+                const val = parseFloat(document.getElementById(`weight-${dept}`).value) || 0;
+                weights[dept] = val;
+                totalWeight += val;
+            });
+
+            if (totalWeight === 0) {
+                alert('权重总和不能为0！');
+                return;
+            }
+
+            let result = `=== 自动分摊结果 ===\n`;
+            result += `耗材：${supply.name}\n`;
+            result += `总成本：¥${supply.total_cost.toFixed(2)}\n`;
+            result += `总数量：${supply.quantity}\n`;
+            result += '-'.repeat(40) + '\n';
+
+            data.departments.forEach(dept => {
+                const weight = weights[dept];
+                if (weight <= 0) return;
+
+                const ratio = weight / totalWeight;
+                const cost = supply.total_cost * ratio;
+                const qty = Math.max(1, Math.round(supply.quantity * ratio));
+
+                const allocation = {
+                    id: data.allocations.length + 1,
+                    supply_id: supplyId,
+                    supply_name: supply.name,
+                    department: dept,
+                    quantity: qty,
+                    unit_price: supply.unit_price,
+                    cost: cost,
+                    date: new Date().toLocaleDateString('zh-CN'),
+                    method: '自动分摊'
+                };
+                data.allocations.push(allocation);
+
+                result += `${dept}：\n`;
+                result += `  权重：${weight} (${(ratio*100).toFixed(1)}%)\n`;
+                result += `  分摊费用：¥${cost.toFixed(2)}\n`;
+                result += `  分配数量：${qty}\n\n`;
+            });
+
+            supply.remaining = 0;
+            saveData();
+            renderAll();
+
+            const resultBox = document.getElementById('autoResult');
+            resultBox.textContent = result;
+            resultBox.classList.remove('hidden');
+            showStatus('自动分摊完成！', 'success');
+        }
+
+        // ========== 报表统计 ==========
+        function refreshReport() {
+            const totalCost = data.allocations.reduce((sum, a) => sum + a.cost, 0);
+            const totalCostWithoutTax = data.supplies.reduce((sum, s) => sum + (s.total_cost_without_tax || s.total_cost), 0);
+            const supplyCount = data.supplies.length;
+            const allocCount = data.allocations.length;
+            const deptCount = data.departments.length;
+
+            document.getElementById('totalCost').textContent = `¥${totalCost.toFixed(2)}`;
+            document.getElementById('totalCostWithoutTax').textContent = `¥${totalCostWithoutTax.toFixed(2)}`;
+            document.getElementById('supplyCount').textContent = supplyCount;
+            document.getElementById('allocCount').textContent = allocCount;
+            document.getElementById('deptCount').textContent = deptCount;
+
+            const deptStats = {};
+            data.departments.forEach(d => deptStats[d] = { cost: 0, count: 0 });
+            data.allocations.forEach(a => {
+                if (deptStats[a.department]) {
+                    deptStats[a.department].cost += a.cost;
+                    deptStats[a.department].count++;
+                }
+            });
+
+            const deptTable = document.getElementById('deptSummaryTable');
+            deptTable.innerHTML = Object.entries(deptStats)
+                .sort((a, b) => b[1].cost - a[1].cost)
+                .map(([dept, stats]) => {
+                    const percent = totalCost > 0 ? (stats.cost / totalCost * 100).toFixed(1) : 0;
+                    return `<tr>
+                        <td>${dept}</td>
+                        <td class="text-center">${stats.count}</td>
+                        <td class="text-right">¥${stats.cost.toFixed(2)}</td>
+                        <td class="text-right">${percent}%</td>
+                    </tr>`;
+                }).join('');
+
+            const supplyStats = {};
+            data.allocations.forEach(a => {
+                supplyStats[a.supply_name] = (supplyStats[a.supply_name] || 0) + a.cost;
+            });
+
+            const supplyTable = document.getElementById('supplySummaryTable');
+            supplyTable.innerHTML = Object.entries(supplyStats)
+                .sort((a, b) => b[1] - a[1])
+                .map(([name, cost]) => `<tr>
+                    <td>${name}</td>
+                    <td class="text-right">¥${cost.toFixed(2)}</td>
+                </tr>`).join('');
+
+            const detailTable = document.getElementById('detailTable');
+            detailTable.innerHTML = [...data.allocations]
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .map(a => `<tr>
+                    <td>${a.date}</td>
+                    <td>${a.supply_name}</td>
+                    <td>${a.department}</td>
+                    <td class="text-center">${a.quantity}</td>
+                    <td class="text-right">¥${a.cost.toFixed(2)}</td>
+                </tr>`).join('') || '<tr><td colspan="5" class="text-center">暂无数据</td></tr>';
+        }
+
+        // ========== 部门管理 ==========
+        function addDept() {
+            const name = document.getElementById('newDeptName').value.trim();
+            if (name && !data.departments.includes(name)) {
+                data.departments.push(name);
+                saveData();
+                renderAll();
+                initPreAlloc();
+                document.getElementById('newDeptName').value = '';
+                showStatus(`已添加部门：${name}`, 'success');
+            } else if (data.departments.includes(name)) {
+                alert('该部门已存在！');
+            }
+        }
+
+        function removeDept(dept) {
+            if (confirm(`确定删除部门 "${dept}" 吗？`)) {
+                data.departments = data.departments.filter(d => d !== dept);
+                saveData();
+                renderAll();
+                initPreAlloc();
+                showStatus(`已删除部门：${dept}`, 'success');
+            }
+        }
+                saveData();
+                renderAll();
+            }
+        }
+
+        // ========== 耗材管理 ==========
+        let currentEditId = null;
+
+        function renderSupplyManage() {
+            const table = document.getElementById('manageSupplyTable');
+            const filtered = getFilteredSupplies();
+
+            document.getElementById('supplyCountDisplay').textContent = `(共 ${filtered.length} 条)`;
+
+            if (filtered.length === 0) {
+                table.innerHTML = '<tr><td colspan="10" class="text-center">暂无耗材记录</td></tr>';
+                return;
+            }
+
+            table.innerHTML = filtered.map(s => {
+                const allocated = s.quantity - s.remaining;
+                const isLowStock = s.remaining <= 5;
+                const taxRate = s.tax_rate || 13;
+                const priceWithoutTax = s.unit_price_without_tax || s.unit_price;
+                return `<tr style="${isLowStock ? 'background: #ffebee;' : ''}">
+                    <td>${s.id}</td>
+                    <td><strong>${s.name}</strong></td>
+                    <td><span class="tag">${s.type}</span></td>
+                    <td class="text-center">${s.quantity}</td>
+                    <td class="text-center">${allocated}</td>
+                    <td class="text-center" style="color: ${isLowStock ? '#f44336' : '#4CAF50'}; font-weight: bold;">
+                        ${s.remaining} ${isLowStock ? '⚠️' : ''}
+                    </td>
+                    <td class="text-right">
+                        <div>¥${s.unit_price.toFixed(2)}</div>
+                        <div style="color: #2e7d32; font-size: 11px;">¥${priceWithoutTax.toFixed(2)}</div>
+                    </td>
+                    <td class="text-right">${taxRate}%</td>
+                    <td class="text-right">¥${s.total_cost.toFixed(2)}</td>
+                    <td>${s.date}</td>
+                    <td class="text-center">
+                        <button class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px;" onclick="editSupply(${s.id})">编辑</button>
+                        <button class="btn btn-primary" style="padding: 5px 10px; font-size: 12px;" onclick="viewSupplyDetail(${s.id})">明细</button>
+                        <button class="btn btn-danger" style="padding: 5px 10px; font-size: 12px;" onclick="deleteSupply(${s.id})">删除</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function getFilteredSupplies() {
+            let supplies = data.supplies;
+            const search = document.getElementById('searchSupply').value.trim().toLowerCase();
+            const type = document.getElementById('filterType').value;
+
+            if (search) {
+                supplies = supplies.filter(s => s.name.toLowerCase().includes(search));
+            }
+            if (type) {
+                supplies = supplies.filter(s => s.type === type);
+            }
+            return supplies;
+        }
+
+        function filterSupply() {
+            renderSupplyManage();
+        }
+
+        function editSupply(id) {
+            const supply = data.supplies.find(s => s.id === id);
+            if (!supply) return;
+
+            currentEditId = id;
+            document.getElementById('editSupplyId').value = id;
+            document.getElementById('editSupplyName').value = supply.name;
+            document.getElementById('editSupplyType').value = supply.type;
+            document.getElementById('editSupplyQty').value = supply.quantity;
+            document.getElementById('editSupplyPrice').value = supply.unit_price;
+            document.getElementById('editTaxRate').value = supply.tax_rate || 13;
+
+            // 计算不含税价格
+            const taxRate = parseFloat(document.getElementById('editTaxRate').value) || 13;
+            const price = supply.unit_price;
+            const priceWithoutTax = price / (1 + taxRate / 100);
+            document.getElementById('editPriceWithoutTax').value = priceWithoutTax.toFixed(2);
+
+            // 添加税率变化监听
+            document.getElementById('editTaxRate').onchange = function() {
+                const tr = parseFloat(this.value) || 13;
+                const pr = parseFloat(document.getElementById('editSupplyPrice').value) || 0;
+                const pwot = pr / (1 + tr / 100);
+                document.getElementById('editPriceWithoutTax').value = pwot.toFixed(2);
+            };
+            document.getElementById('editSupplyPrice').oninput = function() {
+                const pr = parseFloat(this.value) || 0;
+                const tr = parseFloat(document.getElementById('editTaxRate').value) || 13;
+                const pwot = pr / (1 + tr / 100);
+                document.getElementById('editPriceWithoutTax').value = pwot.toFixed(2);
+            };
+
+            document.getElementById('editDialog').classList.remove('hidden');
+            document.getElementById('editDialog').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function saveSupplyEdit() {
+            if (!currentEditId) return;
+
+            const supply = data.supplies.find(s => s.id === currentEditId);
+            if (!supply) return;
+
+            const name = document.getElementById('editSupplyName').value.trim();
+            const type = document.getElementById('editSupplyType').value;
+            const qty = parseInt(document.getElementById('editSupplyQty').value);
+            const price = parseFloat(document.getElementById('editSupplyPrice').value);
+            const taxRate = parseFloat(document.getElementById('editTaxRate').value) || 13;
+
+            if (!name || !qty || qty <= 0 || price < 0) {
+                alert('请填写完整且正确的信息！');
+                return;
+            }
+
+            // 检查是否已分配，不能减少数量到已分配以下
+            const allocated = supply.quantity - supply.remaining;
+            if (qty < allocated) {
+                alert(`该耗材已分配 ${allocated} 个，数量不能少于 ${allocated}！`);
+                return;
+            }
+
+            const oldName = supply.name;
+            supply.name = name;
+            supply.type = type;
+            supply.quantity = qty;
+            supply.unit_price = price;
+            supply.tax_rate = taxRate;
+            supply.unit_price_without_tax = price / (1 + taxRate / 100);
+            supply.total_cost = qty * price;
+            supply.total_cost_without_tax = qty * supply.unit_price_without_tax;
+            supply.remaining = qty - allocated;
+
+            // 更新分配记录中的耗材名称
+            if (oldName !== name) {
+                data.allocations.forEach(a => {
+                    if (a.supply_id === currentEditId) {
+                        a.supply_name = name;
+                    }
+                });
+            }
+
+            saveData();
+            renderAll();
+            renderSupplyManage();
+            closeEditDialog();
+            showStatus('耗材信息已更新！', 'success');
+        }
+
+        function closeEditDialog() {
+            document.getElementById('editDialog').classList.add('hidden');
+            currentEditId = null;
+        }
+
+        function deleteSupply(id) {
+            const supply = data.supplies.find(s => s.id === id);
+            if (!supply) return;
+
+            const allocated = supply.quantity - supply.remaining;
+            if (allocated > 0) {
+                if (!confirm(`⚠️ 警告：该耗材已分配 ${allocated} 个，删除后将影响报表统计！\n\n确定要删除 "${supply.name}" 吗？`)) {
+                    return;
+                }
+            } else {
+                if (!confirm(`确定要删除 "${supply.name}" 吗？`)) {
+                    return;
+                }
+            }
+
+            data.supplies = data.supplies.filter(s => s.id !== id);
+            saveData();
+            renderAll();
+            renderSupplyManage();
+            showStatus('耗材已删除！', 'success');
+        }
+
+        function viewSupplyDetail(id) {
+            const supply = data.supplies.find(s => s.id === id);
+            if (!supply) return;
+
+            const allocations = data.allocations.filter(a => a.supply_id === id);
+
+            document.getElementById('supplyDetailTitle').innerHTML = `
+                <strong>${supply.name}</strong> -
+                入库：${supply.quantity} 个 |
+                已分配：${supply.quantity - supply.remaining} 个 |
+                剩余：<span style="color: ${supply.remaining <= 5 ? '#f44336' : '#4CAF50'};">${supply.remaining} 个</span>
+            `;
+
+            const table = document.getElementById('supplyDetailTable');
+            if (allocations.length === 0) {
+                table.innerHTML = '<tr><td colspan="4" class="text-center">暂无分配记录</td></tr>';
+            } else {
+                table.innerHTML = allocations.map(a => `<tr>
+                    <td>${a.date}</td>
+                    <td>${a.department}</td>
+                    <td class="text-center">${a.quantity}</td>
+                    <td class="text-right">¥${a.cost.toFixed(2)}</td>
+                </tr>`).join('');
+            }
+
+            document.getElementById('supplyDetailArea').classList.remove('hidden');
+            document.getElementById('supplyDetailArea').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function closeSupplyDetail() {
+            document.getElementById('supplyDetailArea').classList.add('hidden');
+        }
+
+        function showLowStock() {
+            const lowStock = data.supplies.filter(s => s.remaining <= 5);
+            const table = document.getElementById('lowStockTable');
+
+            if (lowStock.length === 0) {
+                table.innerHTML = '<tr><td colspan="6" class="text-center" style="color: #4CAF50;">✓ 所有耗材库存充足</td></tr>';
+            } else {
+                table.innerHTML = lowStock.map(s => `<tr style="background: #ffebee;">
+                    <td>${s.id}</td>
+                    <td><strong>${s.name}</strong></td>
+                    <td>${s.type}</td>
+                    <td class="text-center">${s.quantity}</td>
+                    <td class="text-center" style="color: #f44336; font-weight: bold; font-size: 16px;">${s.remaining}</td>
+                    <td>${s.date}</td>
+                </tr>`).join('');
+            }
+
+            document.getElementById('lowStockArea').classList.remove('hidden');
+            document.getElementById('lowStockArea').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function exportSupplyList() {
+            const supplies = getFilteredSupplies();
+            if (supplies.length === 0) {
+                alert('没有数据可导出');
+                return;
+            }
+
+            let csv = '编号,名称,类型,入库数量,已分配,剩余,含税单价,税率,不含税单价,含税总价,不含税总价,入库日期\n';
+            supplies.forEach(s => {
+                const allocated = s.quantity - s.remaining;
+                const taxRate = s.tax_rate || 13;
+                const priceWithoutTax = s.unit_price_without_tax || s.unit_price;
+                const totalCostWithoutTax = s.total_cost_without_tax || s.total_cost;
+                csv += `${s.id},${s.name},${s.type},${s.quantity},${allocated},${s.remaining},${s.unit_price},${taxRate}%,${priceWithoutTax.toFixed(2)},${s.total_cost.toFixed(2)},${totalCostWithoutTax.toFixed(2)},${s.date}\n`;
+            });
+
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `耗材清单_${new Date().toLocaleDateString('zh-CN')}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showStatus('耗材清单已导出！', 'success');
+        }
+
+        // ========== 清空数据 ==========
+        function clearAllData() {
+            if (confirm('⚠️ 警告：确定要清空所有数据吗？此操作不可恢复！\n\n建议先导出数据备份。')) {
+                data = {
+                    supplies: [],
+                    allocations: [],
+                    departments: ["办公室", "人力资源部", "授信审批部", "计划财务部", "运营管理部", "国际金融部", "公司业务部", "个人业务部", "信息科技部", "风险管理部", "纪委办公室", "信用卡中心", "内控合规部", "金融市场部", "零售一部", "零售三部", "公司一部", "公司二部", "公司三部", "公司七部", "营销九部", "营销十部", "网络金融部", "普惠金融部", "学府路支行", "南通大街支行", "哈西支行", "自贸区支行", "兴江路支行"]
+                };
+                saveData();
+                renderAll();
+                initPreAlloc();
+                updateDataStatus();
+                showStatus('数据已清空！', 'success');
+            }
+        }
+
+        // ========== 渲染界面 ==========
+        function renderAll() {
+            renderSupplyTable();
+
+            const allocTable = document.getElementById('allocTable');
+            allocTable.innerHTML = data.allocations.map(a => `<tr>
+                <td>${a.date}</td>
+                <td>${a.supply_name}</td>
+                <td>${a.department}</td>
+                <td class="text-center">${a.quantity}</td>
+                <td class="text-right">¥${a.unit_price.toFixed(2)}</td>
+                <td class="text-right">¥${a.cost.toFixed(2)}</td>
+            </tr>`).join('') || '<tr><td colspan="6" class="text-center">暂无分配记录</td></tr>';
+
+            const availableSupplies = data.supplies.filter(s => s.remaining > 0);
+            const supplyOptions = '<option value="">-- 请选择 --</option>' +
+                availableSupplies.map(s => `<option value="${s.id}">${s.name} (剩余${s.remaining})</option>`).join('');
+            document.getElementById('allocSupply').innerHTML = supplyOptions;
+
+            const autoSupplyOptions = '<option value="">-- 请选择 --</option>' +
+                data.supplies.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+            document.getElementById('autoSupply').innerHTML = autoSupplyOptions;
+
+            const deptOptions = '<option value="">-- 请选择 --</option>' +
+                data.departments.map(d => `<option value="${d}">${d}</option>`).join('');
+            document.getElementById('allocDept').innerHTML = deptOptions;
+
+            const weightContainer = document.getElementById('weightInputs');
+            weightContainer.innerHTML = data.departments.map(dept => `
+                <div class="weight-item">
+                    <label>${dept}：</label>
+                    <input type="number" id="weight-${dept}" value="1" min="0" step="0.1">
+                </div>
+            `).join('');
+
+            const deptList = document.getElementById('deptList');
+            deptList.innerHTML = data.departments.map(d => `
+                <div class="dept-tag">
+                    ${d}
+                    <button onclick="removeDept('${d}')">×</button>
+                </div>
+            `).join('') || '<span style="color: #999;">暂无部门</span>';
+
+            // 刷新领用审批徽章
+            updatePendBadge();
+        }
+
+        // ========== 领用审批 ==========
+        let reqFilter = 'pending';
+
+        function importReqs(input) {
+            const f = input.files[0];
+            if (!f) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const d = JSON.parse(e.target.result);
+                    const reqs = d.requests || [];
+                    if (!reqs.length) return showStatus('文件中没有申请记录', 'error');
+                    // 合并，去重
+                    if (!data.requests) data.requests = [];
+                    let added = 0;
+                    reqs.forEach(r => {
+                        const exists = data.requests.find(x =>
+                            x.department === r.department && x.supply_id === r.supply_id &&
+                            x.quantity === r.quantity && x.request_date === r.request_date);
+                        if (!exists) {
+                            r.id = data.requests.length + 1;
+                            data.requests.push(r);
+                            added++;
+                        }
+                    });
+                    saveData();
+                    renderReqTable();
+                    showStatus('✅ 导入了 ' + added + ' 条申请（来自：' + (d.exports_from || '未知') + '）', 'success');
+                } catch (ex) { showStatus('文件格式错误', 'error'); }
+            };
+            reader.readAsText(f);
+            input.value = '';
+        }
+
+        function renderReqTable() {
+            const tbody = document.getElementById('rtb');
+            let list = (data.requests || []);
+            if (reqFilter) list = list.filter(r => r.status === reqFilter);
+
+            const sl = { pending: '⏳待审核', approved: '✅已通过', rejected: '❌已驳回' };
+            const sc = { pending: 'tag-pend', approved: 'tag-ok', rejected: 'tag-no' };
+            if (!list.length) {
+                tbody.innerHTML = '<tr><td colspan="9" class="tc muted">暂无' + (sl[reqFilter] || '') + '申请</td></tr>';
+            } else {
+                tbody.innerHTML = list.map(r => `
+                    <tr style="${r.status==='pending'?'background:#fffdf5':''}">
+                        <td class="tc">${r.id}</td><td>${esc(r.department)}</td><td>${r.applicant||'-'}</td>
+                        <td>${esc(r.supply_name)}</td><td class="tr">${r.quantity}</td>
+                        <td>${r.reason||'-'}</td><td>${r.request_date}</td>
+                        <td><span class="tag ${sc[r.status]||''}">${sl[r.status]||r.status}</span>${r.admin_remark&&r.status==='rejected'?`<br><span style="font-size:11px;color:#999">${esc(r.admin_remark)}</span>`:''}</td>
+                        <td class="tc">${r.status==='pending'?`<button class="btn btn-success btn-sm" onclick="approveReq(${r.id})">✓</button> <button class="btn btn-danger btn-sm" onclick="rejectReq(${r.id})">✗</button>`:'已处理'}</td>
+                    </tr>`).join('');
+            }
+            updatePendBadge();
+        }
+
+        function filterReqs(s) {
+            reqFilter = s;
+            document.querySelectorAll('#requisition .filter-btns .btn').forEach(b => b.classList.remove('active'));
+            if (event && event.target) event.target.classList.add('active');
+            renderReqTable();
+        }
+
+        function approveReq(id) {
+            const r = (data.requests || []).find(x => x.id === id);
+            if (!r || r.status !== 'pending') return;
+            const supply = data.supplies.find(s => s.id === r.supply_id);
+            if (!supply) return alert('耗材不存在');
+            if (r.quantity > supply.remaining) return alert('库存不足！剩' + supply.remaining);
+
+            const remark = prompt('备注：', '同意');
+            if (remark === null) return;
+
+            supply.remaining -= r.quantity;
+            data.allocations.push({
+                id: data.allocations.length + 1, supply_id: r.supply_id, supply_name: r.supply_name,
+                department: r.department, quantity: r.quantity, unit_price: supply.unit_price,
+                cost: r.quantity * supply.unit_price, date: new Date().toISOString().split('T')[0],
+                method: '领用申请', is_share: false, source: 'requisition', request_id: r.id
+            });
+            r.status = 'approved'; r.admin_remark = remark;
+            r.resolve_date = new Date().toISOString().split('T')[0];
+            saveData(); renderAll(); renderReqTable();
+            showStatus('✅ 已通过！' + r.department + ' ' + r.supply_name + '×' + r.quantity + '，库存已扣减', 'success');
+        }
+
+        function rejectReq(id) {
+            const r = (data.requests || []).find(x => x.id === id);
+            if (!r || r.status !== 'pending') return;
+            const remark = prompt('驳回理由：', '库存不足');
+            if (remark === null) return;
+            r.status = 'rejected'; r.admin_remark = remark;
+            r.resolve_date = new Date().toISOString().split('T')[0];
+            saveData(); renderReqTable();
+            showStatus('❌ 已驳回', 'info');
+        }
+
+        function batchApprove() {
+            const pending = (data.requests || []).filter(r => r.status === 'pending');
+            if (!pending.length) return alert('没有待审核的申请');
+            if (!confirm('确认一键通过全部 ' + pending.length + ' 条？')) return;
+            let ok = 0, fail = 0;
+            pending.forEach(r => {
+                const s = data.supplies.find(x => x.id === r.supply_id);
+                if (!s || r.quantity > s.remaining) {
+                    r.status = 'rejected'; r.admin_remark = '库存不足，自动驳回';
+                    r.resolve_date = new Date().toISOString().split('T')[0]; fail++;
+                } else {
+                    s.remaining -= r.quantity;
+                    data.allocations.push({
+                        id: data.allocations.length + 1, supply_id: r.supply_id, supply_name: r.supply_name,
+                        department: r.department, quantity: r.quantity, unit_price: s.unit_price,
+                        cost: r.quantity * s.unit_price, date: new Date().toISOString().split('T')[0],
+                        method: '领用申请', is_share: false, source: 'requisition', request_id: r.id
+                    });
+                    r.status = 'approved'; r.admin_remark = '批量通过';
+                    r.resolve_date = new Date().toISOString().split('T')[0]; ok++;
+                }
+            });
+            saveData(); renderAll(); renderReqTable();
+            showStatus('批量完成！通过' + ok + '条，驳回' + fail + '条', 'success');
+        }
+
+        function updatePendBadge() {
+            const count = (data.requests || []).filter(r => r.status === 'pending').length;
+            const badge = document.getElementById('pendBadge');
+            const pc = document.getElementById('pc');
+            if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'inline-block' : 'none'; }
+            if (pc) pc.textContent = count;
+        }
+
+        // 启动
+        window.onload = init;
+    </script>
+</body>
+</html>
