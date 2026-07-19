@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>耗材领用 — 员工端</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Microsoft YaHei","PingFang SC",-apple-system,sans-serif;background:#f0f2f5;min-height:100vh}
+.header{background:linear-gradient(135deg,#1B5E20,#388E3C);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.header h1{font-size:1.05rem;font-weight:600}
+.header .dept-tag{font-size:.78rem;opacity:.85}
+.container{max-width:720px;margin:0 auto;padding:12px}
+.card{background:#fff;border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.card-title{font-weight:600;margin-bottom:12px;font-size:.95rem;display:flex;align-items:center;gap:6px}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:.8rem;color:#666;margin-bottom:4px;font-weight:500}
+input,select,textarea{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:8px;font-size:.88rem;font-family:inherit;background:#fff;transition:border .2s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#388E3C}
+textarea{resize:vertical;min-height:70px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{padding:9px 18px;border:none;border-radius:8px;font-size:.88rem;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
+.btn-p{background:#388E3C;color:#fff;width:100%;padding:14px;font-size:1rem;font-weight:600;border-radius:10px}
+.btn-p:hover{background:#2E7D32}
+.btn-d{background:#f44336;color:#fff;padding:5px 12px;font-size:.75rem}
+.btn-o{background:#fff;color:#388E3C;border:1px solid #388E3C;padding:8px 16px;font-size:.82rem}
+.tag{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.75rem;font-weight:500}
+.tag-pend{background:#FFF3E0;color:#E65100}.tag-ok{background:#E8F5E9;color:#2E7D32}.tag-no{background:#FFEBEE;color:#C62828}
+.supply-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:14px}
+.supply-card{background:#fff;border-radius:10px;padding:12px 14px;cursor:pointer;border:2px solid transparent;transition:all .15s;box-shadow:0 1px 3px rgba(0,0,0,.04);text-align:center}
+.supply-card:hover,.supply-card:active{border-color:#388E3C;transform:translateY(-1px)}
+.supply-card.selected{border-color:#388E3C;background:#f1f8e9}
+.supply-card .n{font-weight:600;font-size:.88rem}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+th{background:#f8f9fa;padding:9px;text-align:left;font-weight:600;color:#666;border-bottom:2px solid #e0e0e0}
+td{padding:8px 9px;border-bottom:1px solid #f0f0f0}
+.tr{text-align:right}.tc{text-align:center}.muted{color:#999}
+.filter-bar{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.filter-btn{padding:6px 15px;border:1px solid #ddd;border-radius:20px;background:#fff;cursor:pointer;font-size:.8rem;font-family:inherit;transition:all .15s}
+.filter-btn.active{background:#388E3C;color:#fff;border-color:#388E3C}
+.toast{position:fixed;top:68px;right:14px;padding:10px 18px;border-radius:8px;color:#fff;font-size:.85rem;z-index:999;animation:slideIn .3s;box-shadow:0 4px 12px rgba(0,0,0,.2);max-width:90vw}
+.toast-ok{background:#4CAF50}.toast-err{background:#f44336}
+@keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+.empty{padding:30px;text-align:center;color:#999;font-size:.9rem}.empty .icon{font-size:2.5rem;margin-bottom:8px}
+.upload-area{border:1px dashed #ccc;border-radius:10px;padding:20px;text-align:center;cursor:pointer;margin-bottom:12px;transition:all .2s}
+.upload-area:hover{border-color:#388E3C;background:#f5fbf5}
+.upload-area input{display:none}
+@media(max-width:500px){.form-row{grid-template-columns:1fr}.supply-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>📦 耗材领用</h1>
+<div style="display:flex;align-items:center;gap:8px">
+<span class="dept-tag" id="deptTag"></span>
+<button class="btn" onclick="pickDept()" style="background:rgba(255,255,255,.2);color:#fff;border:none;padding:5px 12px;font-size:.75rem;border-radius:8px">切换</button>
+</div>
+</div>
+
+<div class="container">
+<!-- 首次使用：加载数据 + 选择部门 -->
+<div class="card" id="setupCard">
+<div class="card-title">📥 加载耗材数据</div>
+<p class="muted" style="margin-bottom:12px;font-size:.85rem">请先导入管理员分发的数据文件，或从上次缓存继续</p>
+<label class="upload-area" id="uploadArea">
+<input type="file" accept=".json" onchange="loadDataFile(this)">
+<div>📁 <strong>点击导入</strong> data.json</div>
+<div style="font-size:.75rem;color:#999;margin-top:4px">从管理员获取最新耗材数据</div>
+</label>
+<button class="btn btn-o" onclick="useLocalData()" style="width:100%">📋 使用本地缓存数据</button>
+</div>
+
+<!-- 选择部门 -->
+<div class="card" id="deptCard" style="display:none">
+<div class="card-title">🏢 选择你的部门</div>
+<select id="myDept" style="margin-bottom:10px"><option value="">-- 请选择 --</option></select>
+<button class="btn btn-p" onclick="confirmDept()">✓ 确认部门</button>
+</div>
+
+<!-- 可领耗材 -->
+<div id="mainArea" style="display:none">
+<div class="card">
+<div class="card-title">📦 可领耗材 <span style="font-size:.78rem;color:#999;font-weight:400">点击卡片快速选择</span></div>
+<div class="supply-grid" id="supGrid"><div class="empty">暂无耗材</div></div>
+</div>
+
+<!-- 申请表单 -->
+<div class="card" style="background:linear-gradient(135deg,#1a237e,#283593);color:#fff" id="formCard">
+<div class="card-title" style="color:#fff">📝 提交领用申请</div>
+<div class="form-group"><label style="color:rgba(255,255,255,.85)">📦 耗材</label><select id="rSup" onchange="onSupCh()"><option value="">-- 选择 --</option></select></div>
+<div class="form-row">
+<div class="form-group"><label style="color:rgba(255,255,255,.85)">🔢 数量</label><input type="number" id="rQty" value="1" min="1" style="text-align:center"><div id="stockHint" style="font-size:.75rem;color:rgba(255,255,255,.7);margin-top:3px"></div></div>
+</div>
+<div class="form-group"><label style="color:rgba(255,255,255,.85)">📝 理由</label><input type="text" id="rReason" placeholder="如：打印机硒鼓耗尽"></div>
+<button class="btn btn-p" onclick="submitReq()" style="background:#fff;color:#1a237e">📤 提交申请</button>
+</div>
+
+<!-- 我的申请 -->
+<div class="card">
+<div class="card-title">📋 我的申请 <span id="myCount" style="font-weight:400;font-size:.82rem;color:#999"></span></div>
+<div class="filter-bar">
+<button class="filter-btn active" data-f="pending" onclick="filterReqs('pending')">⏳ 待审核</button>
+<button class="filter-btn" data-f="approved" onclick="filterReqs('approved')">✅ 已通过</button>
+<button class="filter-btn" data-f="rejected" onclick="filterReqs('rejected')">❌ 已驳回</button>
+<button class="filter-btn" data-f="" onclick="filterReqs('')">📋 全部</button>
+</div>
+<div class="table-wrap"><table><thead><tr><th>耗材</th><th class="tr">数量</th><th>理由</th><th>日期</th><th>状态</th><th style="width:50px"></th></tr></thead><tbody id="myReqTb"></tbody></table></div>
+<div style="margin-top:12px;text-align:right"><button class="btn btn-o" onclick="exportMyReqs()">📤 导出我的申请（发给管理员）</button></div>
+</div>
+</div>
+</div>
+
+<script>
+const STORAGE_KEY = 'printerSupplyData';
+const MY_DEPT_KEY = 'printer_my_dept';
+const MY_REQS_KEY = 'printer_my_reqs';
+const DEFAULT_DEPTS = ["办公室","人力资源部","授信审批部","计划财务部","运营管理部","国际金融部","公司业务部","个人业务部","信息科技部","风险管理部","纪委办公室","信用卡中心","内控合规部","金融市场部","零售一部","零售三部","公司一部","公司二部","公司三部","公司七部","营销九部","营销十部","网络金融部","普惠金融部","学府路支行","南通大街支行","哈西支行","自贸区支行","兴江路支行"];
+
+let data = {supplies:[],allocations:[],requests:[],departments:DEFAULT_DEPTS};
+let myDept = localStorage.getItem(MY_DEPT_KEY) || '';
+let myReqs = JSON.parse(localStorage.getItem(MY_REQS_KEY) || '[]');
+let reqFilter = 'pending';
+let allSupplies = [];
+
+function esc(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):''}
+function toast(m,t='ok'){const e=document.createElement('div');e.className='toast toast-'+t;e.textContent=m;document.body.appendChild(e);setTimeout(()=>{e.style.opacity='0';e.style.transition='opacity .3s'},2500);setTimeout(()=>e.remove(),2800)}
+function saveData(){localStorage.setItem(STORAGE_KEY,JSON.stringify(data))}
+function saveMyReqs(){localStorage.setItem(MY_REQS_KEY,JSON.stringify(myReqs))}
+
+// ==== 初始化 ====
+function init(){
+const saved = localStorage.getItem(STORAGE_KEY);
+if(saved){try{const p=JSON.parse(saved);data.supplies=p.supplies||[];data.allocations=p.allocations||[];data.departments=p.departments||DEFAULT_DEPTS;data.requests=p.requests||[]}catch(e){}}
+if(data.departments.length>0){
+document.getElementById('deptCard').style.display='block';
+document.getElementById('setupCard').style.display='none';
+document.getElementById('myDept').innerHTML='<option value="">-- 请选择 --</option>'+data.departments.map(d=>`<option value="${d}" ${d===myDept?'selected':''}>${d}</option>`).join('');
+if(myDept) startMain();
+}
+}
+
+// ==== 数据加载 ====
+function loadDataFile(input){
+const f=input.files[0];if(!f)return;
+const reader=new FileReader();
+reader.onload=function(e){
+try{const d=JSON.parse(e.target.result);
+data.supplies=d.supplies||[];data.allocations=d.allocations||[];data.departments=d.departments||DEFAULT_DEPTS;data.requests=d.requests||[];
+saveData();
+document.getElementById('setupCard').style.display='none';
+document.getElementById('deptCard').style.display='block';
+document.getElementById('myDept').innerHTML='<option value="">-- 请选择 --</option>'+data.departments.map(x=>`<option value="${x}" ${x===myDept?'selected':''}>${x}</option>`).join('');
+toast('数据加载成功！请选择部门','ok');
+if(myDept) startMain();
+}catch(ex){toast('文件格式错误','err')}
+};reader.readAsText(f)
+}
+function useLocalData(){
+if(!data.supplies.length&&!data.departments.length){data.departments=DEFAULT_DEPTS;saveData()}
+document.getElementById('setupCard').style.display='none';
+document.getElementById('deptCard').style.display='block';
+document.getElementById('myDept').innerHTML='<option value="">-- 请选择 --</option>'+data.departments.map(x=>`<option value="${x}" ${x===myDept?'selected':''}>${x}</option>`).join('');
+if(myDept) startMain()
+}
+
+// ==== 部门 ====
+function pickDept(){myDept='';localStorage.removeItem(MY_DEPT_KEY);document.getElementById('mainArea').style.display='none';document.getElementById('deptCard').style.display='block';document.getElementById('myDept').value=''}
+function confirmDept(){
+const d=document.getElementById('myDept').value;if(!d)return toast('请选择部门','err');
+myDept=d;localStorage.setItem(MY_DEPT_KEY,d);startMain()
+}
+function startMain(){
+document.getElementById('deptCard').style.display='none';
+document.getElementById('mainArea').style.display='block';
+document.getElementById('deptTag').textContent=myDept;
+allSupplies=data.supplies.filter(s=>s.remaining>0);
+renderCards();refreshSupSelect();renderMyReqs()
+}
+
+// ==== 耗材 ====
+function refreshSupSelect(){
+const sel=document.getElementById('rSup');
+allSupplies=data.supplies.filter(s=>s.remaining>0);
+sel.innerHTML='<option value="">-- 选择 --</option>'+allSupplies.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')
+}
+function renderCards(){
+const g=document.getElementById('supGrid');
+allSupplies=data.supplies.filter(s=>s.remaining>0);
+if(!allSupplies.length){g.innerHTML='<div class="empty"><div class="icon">📭</div>暂无可领耗材</div>';return}
+g.innerHTML=allSupplies.map(s=>`<div class="supply-card" id="c-${s.id}" onclick="pickSup(${s.id})"><div class="n">${esc(s.name)}</div></div>`).join('')
+}
+function pickSup(id){document.getElementById('rSup').value=id;document.getElementById('formCard').scrollIntoView({behavior:'smooth'});document.querySelectorAll('.supply-card').forEach(c=>c.classList.remove('selected'));document.getElementById('c-'+id)?.classList.add('selected');onSupCh()}
+function onSupCh(){
+const sid=parseInt(document.getElementById('rSup').value);
+const s=data.supplies.find(x=>x.id===sid);
+const h=document.getElementById('stockHint'),q=document.getElementById('rQty');
+if(s){h.textContent='库存:'+s.remaining+' | 单价:¥'+s.unit_price.toFixed(2);q.max=s.remaining}else{h.textContent=''}
+}
+
+// ==== 申请 ====
+function submitReq(){
+const sid=parseInt(document.getElementById('rSup').value),qty=parseInt(document.getElementById('rQty').value);
+const reason=document.getElementById('rReason').value.trim();
+if(!sid)return toast('请选择耗材','err');if(!qty||qty<=0)return toast('请填写数量','err');
+const s=data.supplies.find(x=>x.id===sid);
+if(!s)return toast('耗材不存在','err');if(qty>s.remaining)return toast('库存不足！剩'+s.remaining,'err');
+
+const req={id:myReqs.length+1,department:myDept,applicant:'',supply_id:sid,supply_name:s.name,quantity:qty,reason:reason,status:'pending',admin_remark:'',request_date:new Date().toISOString().split('T')[0],resolve_date:''};
+myReqs.push(req);saveMyReqs();
+// 同时写入共享数据
+if(!data.requests)data.requests=[];
+data.requests.push({...req});saveData();
+
+document.getElementById('rQty').value='1';document.getElementById('rReason').value='';document.getElementById('stockHint').textContent='';
+renderMyReqs();refreshSupSelect();renderCards();
+toast('✅ 申请已提交！记得导出申请发给管理员','ok')
+}
+
+// ==== 我的申请 ====
+function filterReqs(f){reqFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));document.querySelector('[data-f="'+f+'"]').classList.add('active');renderMyReqs()}
+function renderMyReqs(){
+const tb=document.getElementById('myReqTb');let l=myReqs;if(reqFilter)l=l.filter(r=>r.status===reqFilter);
+document.getElementById('myCount').textContent='共 '+l.length+' 条';
+const sl={pending:'⏳待审核',approved:'✅已通过',rejected:'❌已驳回'},sc={pending:'tag-pend',approved:'tag-ok',rejected:'tag-no'};
+if(!l.length){tb.innerHTML='<tr><td colspan="6" class="tc muted">暂无申请</td></tr>';return}
+tb.innerHTML=l.map(r=>`<tr><td>${esc(r.supply_name)}</td><td class="tr">${r.quantity}个</td><td>${r.reason||'-'}</td><td>${r.request_date}</td><td><span class="tag ${sc[r.status]}">${sl[r.status]}</span>${r.admin_remark&&r.status==='rejected'?`<br><span style="font-size:11px;color:#999">${esc(r.admin_remark)}</span>`:''}</td><td class="tc">${r.status==='pending'?`<button class="btn btn-d" style="padding:4px 10px;font-size:.7rem" onclick="cancelReq(${r.id})">取消</button>`:'-'}</td></tr>`).join('')
+}
+function cancelReq(id){if(!confirm('取消？'))return;myReqs=myReqs.filter(r=>r.id!==id);saveMyReqs();data.requests=(data.requests||[]).filter(r=>r.id!==id||r.department!==myDept);saveData();renderMyReqs();refreshSupSelect();renderCards();toast('已取消','ok')}
+
+// ==== 导出申请（发给管理员） ====
+function exportMyReqs(){
+const pending=myReqs.filter(r=>r.status==='pending');
+if(!pending.length)return toast('没有待审核的申请','err');
+const out={exports_from:myDept,exports_date:new Date().toISOString(),requests:pending};
+const b=new Blob([JSON.stringify(out,null,2)],{type:'application/json'});
+const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='申请_'+myDept+'_'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href);
+toast('申请文件已导出！发给管理员审批','ok')
+}
+
+init();
+</script>
+</body>
+</html>
