@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>耗材领用 — 员工端</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Microsoft YaHei","PingFang SC",-apple-system,sans-serif;background:#f0f2f5;min-height:100vh}
+.header{background:linear-gradient(135deg,#1B5E20,#388E3C);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.header h1{font-size:1.05rem;font-weight:600}.header .tag{font-size:.78rem;opacity:.85;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.header .badge{background:#f44336;color:#fff;border-radius:12px;padding:1px 8px;font-size:.7rem;font-weight:700;display:none}
+.container{max-width:720px;margin:0 auto;padding:12px}
+.card{background:#fff;border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.card-title{font-weight:600;margin-bottom:12px;font-size:.95rem;display:flex;align-items:center;gap:6px}
+.form-group{margin-bottom:12px}.form-group label{display:block;font-size:.8rem;color:#666;margin-bottom:4px;font-weight:500}
+input,select,textarea{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:8px;font-size:.88rem;font-family:inherit;background:#fff;transition:border .2s;-webkit-appearance:none}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#388E3C}
+textarea{resize:vertical;min-height:70px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{padding:9px 18px;border:none;border-radius:8px;font-size:.88rem;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
+.btn-p{background:#388E3C;color:#fff;width:100%;padding:14px;font-size:1rem;font-weight:600;border-radius:10px}
+.btn-p:hover{background:#2E7D32;transform:translateY(-1px)}
+.btn-d{background:#f44336;color:#fff;padding:5px 12px;font-size:.75rem}
+.tag{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.75rem;font-weight:500}
+.tag-pend{background:#FFF3E0;color:#E65100}.tag-ok{background:#E8F5E9;color:#2E7D32}.tag-no{background:#FFEBEE;color:#C62828}
+.supply-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:14px}
+.supply-card{background:#fff;border-radius:10px;padding:12px 14px;cursor:pointer;border:2px solid transparent;transition:all .15s;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.supply-card:hover,.supply-card:active{border-color:#388E3C;transform:translateY(-1px)}
+.supply-card.selected{border-color:#388E3C;background:#f1f8e9}
+.supply-card .n{font-weight:600;font-size:.88rem;margin-bottom:4px}
+.supply-card .m{font-size:.75rem;color:#999;display:flex;gap:6px;flex-wrap:wrap}
+.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.8rem}
+th{background:#f8f9fa;padding:9px;text-align:left;font-weight:600;color:#666;border-bottom:2px solid #e0e0e0}
+td{padding:8px 9px;border-bottom:1px solid #f0f0f0}
+.tr{text-align:right}.tc{text-align:center}.muted{color:#999}
+.filter-bar{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.filter-btn{padding:6px 15px;border:1px solid #ddd;border-radius:20px;background:#fff;cursor:pointer;font-size:.8rem;font-family:inherit;transition:all .15s}
+.filter-btn.active{background:#388E3C;color:#fff;border-color:#388E3C}
+.toast{position:fixed;top:68px;right:14px;padding:10px 18px;border-radius:8px;color:#fff;font-size:.85rem;z-index:999;animation:slideIn .3s;box-shadow:0 4px 12px rgba(0,0,0,.2);max-width:90vw}
+.toast-ok{background:#4CAF50}.toast-err{background:#f44336}
+@keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+.empty{padding:30px;text-align:center;color:#999;font-size:.9rem}
+.empty .icon{font-size:2.5rem;margin-bottom:8px}
+@media(max-width:500px){.form-row{grid-template-columns:1fr}.supply-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>📦 耗材领用</h1>
+<div style="display:flex;align-items:center;gap:10px">
+<span class="tag" id="userTag"></span>
+<span class="badge" id="myBadge">0</span>
+<button class="btn" onclick="logout()" style="background:rgba(255,255,255,.2);color:#fff;border:none;padding:6px 12px;font-size:.75rem;border-radius:8px">退出</button>
+</div>
+</div>
+
+<div class="container">
+<!-- 可领耗材 -->
+<div class="card">
+<div class="card-title">📦 可领耗材 <span style="font-size:.78rem;color:#999;font-weight:400">点击卡片快速选择</span></div>
+<input type="search" id="supSearch" placeholder="🔍 搜索耗材..." oninput="filterCards()" style="margin-bottom:10px">
+<div class="supply-grid" id="supGrid"><div class="empty">加载中...</div></div>
+</div>
+
+<!-- 申请表单 -->
+<div class="card" style="background:linear-gradient(135deg,#1a237e,#283593);color:#fff" id="formCard">
+<div class="card-title" style="color:#fff">📝 提交申请</div>
+<div class="form-row">
+<div class="form-group"><label style="color:rgba(255,255,255,.85)">🏢 部门</label><select id="rDept"><option value="">-- 选择 --</option></select></div>
+<div class="form-group"><label style="color:rgba(255,255,255,.85)">👤 姓名</label><input type="text" id="rName" placeholder="姓名"></div>
+</div>
+<div class="form-group"><label style="color:rgba(255,255,255,.85)">📦 耗材</label><select id="rSup" onchange="onSupCh()"><option value="">-- 选择 --</option></select></div>
+<div class="form-row">
+<div class="form-group"><label style="color:rgba(255,255,255,.85)">🔢 数量</label><input type="number" id="rQty" value="1" min="1" style="text-align:center"><div id="stockHint" style="font-size:.75rem;color:rgba(255,255,255,.7);margin-top:3px"></div></div>
+</div>
+<div class="form-group"><label style="color:rgba(255,255,255,.85)">📝 理由</label><input type="text" id="rReason" placeholder="如：打印机硒鼓耗尽"></div>
+<button class="btn btn-p" onclick="submitReq()" style="background:#fff;color:#1a237e">📤 提交申请</button>
+</div>
+
+<!-- 我的申请 -->
+<div class="card">
+<div class="card-title">📋 我的申请 <span id="myCount" style="font-weight:400;font-size:.82rem;color:#999"></span></div>
+<div class="filter-bar">
+<button class="filter-btn active" data-f="pending" onclick="filterReqs('pending')">⏳ 待审核</button>
+<button class="filter-btn" data-f="approved" onclick="filterReqs('approved')">✅ 已通过</button>
+<button class="filter-btn" data-f="rejected" onclick="filterReqs('rejected')">❌ 已驳回</button>
+<button class="filter-btn" data-f="" onclick="filterReqs('')">📋 全部</button>
+</div>
+<div class="table-wrap"><table><thead><tr><th>耗材</th><th class="tr">数量</th><th>理由</th><th>日期</th><th>状态</th><th style="width:50px"></th></tr></thead><tbody id="myReqTb"></tbody></table></div>
+</div>
+</div>
+
+<script>
+const API='/api';let token=localStorage.getItem('ptok'),user=null,allSups=[],myReqs=[],reqF='pending';
+function setToken(t){token=t;if(t)localStorage.setItem('ptok',t);else localStorage.removeItem('ptok')}
+async function api(p,o={}){
+const h={...o.headers};if(token)h['Authorization']='Bearer '+token;
+if(!(o.body instanceof FormData))h['Content-Type']='application/json';
+const r=await fetch(API+p,{...o,headers:h});
+if(r.status===401){setToken(null);location.href='/static/login.html';throw new Error('未登录')}
+if(r.status===204)return null;
+const d=await r.json();if(!r.ok)throw new Error(d.detail||'失败');return d
+}
+function toast(m,t='ok'){const e=document.createElement('div');e.className='toast toast-'+t;e.textContent=m;document.body.appendChild(e);setTimeout(()=>{e.style.opacity='0';e.style.transition='opacity .3s'},2500);setTimeout(()=>e.remove(),2800)}
+function esc(s){return s?String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):''}
+
+async function init(){
+if(!token){location.href='/static/login.html';return}
+try{user=await api('/auth/me');document.getElementById('userTag').textContent=(user.department||'')+' — '+(user.applicant||'')}catch(e){location.href='/static/login.html';return}
+await Promise.all([loadSups(),loadDepts(),loadMyReqs()]);
+if(user.department)document.getElementById('rDept').value=user.department;
+if(user.applicant)document.getElementById('rName').value=user.applicant
+}
+async function loadDepts(){try{const d=await api('/departments');renderDeptOptions(d)}catch(e){const saved=localStorage.getItem('printerSupplyData');if(saved){try{const p=JSON.parse(saved);renderDeptOptions(p.departments||[])}catch(e2){}}}}
+function renderDeptOptions(depts){if(depts&&depts.length){document.getElementById('rDept').innerHTML='<option value="">-- 选择 --</option>'+depts.map(x=>`<option value="${esc(typeof x==='string'?x:x.name)}">${esc(typeof x==='string'?x:x.name)}</option>`).join('')}}
+
+async function loadSups(){
+try{allSups=await api('/supplies?available_only=1')}catch(e){allSups=[]}
+if(!allSups||!allSups.length){const saved=localStorage.getItem('printerSupplyData');if(saved){try{const d=JSON.parse(saved);allSups=(d.supplies||[]).filter(s=>s.remaining>0)}catch(e2){}}}
+renderCards(allSups);
+document.getElementById('rSup').innerHTML='<option value="">-- 选择 --</option>'+allSups.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')
+}
+function renderCards(sups){
+const g=document.getElementById('supGrid');
+if(!sups.length){g.innerHTML='<div class="empty"><div class="icon">📭</div>暂无可领耗材</div>';return}
+g.innerHTML=sups.map(s=>`<div class="supply-card" id="c-${s.id}" onclick="pickSup(${s.id})"><div class="n">${esc(s.name)}</div><div class="m"><span>${esc(s.type)}</span><span style="color:${s.remaining<=2?'#f44336':'#388E3C'};font-weight:600">剩${s.remaining}</span><span>¥${s.unit_price.toFixed(2)}</span></div></div>`).join('')}
+function filterCards(){const kw=document.getElementById('supSearch').value.trim().toLowerCase();renderCards(kw?allSups.filter(s=>s.name.toLowerCase().includes(kw)||s.type.toLowerCase().includes(kw)):allSups)}
+function pickSup(id){document.getElementById('rSup').value=id;document.getElementById('formCard').scrollIntoView({behavior:'smooth'});document.querySelectorAll('.supply-card').forEach(c=>c.classList.remove('selected'));document.getElementById('c-'+id)?.classList.add('selected');onSupCh()}
+function onSupCh(){const sid=parseInt(document.getElementById('rSup').value);const s=allSups.find(x=>x.id===sid);const h=document.getElementById('stockHint'),q=document.getElementById('rQty');if(s){h.textContent='库存:'+s.remaining+' | 单价:¥'+s.unit_price.toFixed(2);q.max=s.remaining}else{h.textContent=''}}
+
+async function submitReq(){
+const dept=document.getElementById('rDept').value,name=document.getElementById('rName').value.trim();
+const sid=parseInt(document.getElementById('rSup').value),qty=parseInt(document.getElementById('rQty').value);
+const reason=document.getElementById('rReason').value.trim();
+if(!dept)return toast('请选择部门','err');if(!name)return toast('请填写姓名','err');
+if(!sid)return toast('请选择耗材','err');if(!qty||qty<=0)return toast('请填写数量','err');
+const s=allSups.find(x=>x.id===sid);if(s&&qty>s.remaining)return toast('库存不足！剩'+s.remaining,'err');
+try{await api('/requests',{method:'POST',body:JSON.stringify({department:dept,applicant:name,supply_id:sid,quantity:qty,reason})});
+document.getElementById('rQty').value='1';document.getElementById('rReason').value='';document.getElementById('stockHint').textContent='';
+toast('✅ 申请已提交！','ok');await Promise.all([loadSups(),loadMyReqs()])}catch(e){toast(e.message,'err')}
+}
+
+async function loadMyReqs(){try{myReqs=await api('/requests?page_size=500');renderMyReqs()}catch(e){}}
+function filterReqs(f){reqF=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));document.querySelector('[data-f="'+f+'"]').classList.add('active');renderMyReqs()}
+function renderMyReqs(){
+const tb=document.getElementById('myReqTb');let l=myReqs;if(reqF)l=l.filter(r=>r.status===reqF);
+document.getElementById('myCount').textContent='共 '+l.length+' 条';
+const sl={pending:'⏳待审核',approved:'✅已通过',rejected:'❌已驳回'},sc={pending:'tag-pend',approved:'tag-ok',rejected:'tag-no'};
+if(!l.length){tb.innerHTML='<tr><td colspan="6" class="tc muted">暂无申请</td></tr>';return}
+tb.innerHTML=l.map(r=>`<tr><td>${esc(r.supply_name)}</td><td class="tr">${r.quantity}个</td><td>${r.reason||'-'}</td><td>${r.request_date}</td><td><span class="tag ${sc[r.status]}">${sl[r.status]}</span></td><td class="tc">${r.status==='pending'?`<button class="btn btn-d" style="padding:4px 10px;font-size:.7rem" onclick="cancelReq(${r.id})">取消</button>`:'-'}</td></tr>`).join('')}
+async function cancelReq(id){if(!confirm('取消？'))return;try{await api('/requests/'+id,{method:'DELETE'});toast('已取消','ok');await Promise.all([loadSups(),loadMyReqs()])}catch(e){toast(e.message,'err')}}
+function logout(){if(confirm('退出？')){setToken(null);location.href='/static/login.html'}}
+init();
+</script>
+</body>
+</html>
